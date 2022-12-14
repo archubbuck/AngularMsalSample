@@ -1,0 +1,43 @@
+name: Aspen Web Application
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+
+  - stage: UT
+    displayName: UT
+    variables:
+      group: Aspen-UT2
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/development'), startsWith(variables['Build.SourceBranch'], 'refs/heads/feature'))
+    jobs:
+    - deployment: BuildAndDeploy
+      displayName: Build & Deploy
+      environment: UT
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+              submodules: true
+
+            - task: Npm@1
+              displayName: Install
+              inputs:
+                command: 'install'
+                customRegistry: 'useFeed'
+                customFeed: '28269bc2-3313-4b6a-9806-8def30e4b36c'
+
+            - task: Npm@1
+              displayName: Build
+              inputs:
+                command: 'custom'
+                customCommand: 'run build'
+
+            - task: AzureStaticWebApp@0
+              inputs:
+                app_location: 'dist/msal-angular-tutorial'
+                skip_app_build: true
+                skip_api_build: true
+                verbose: true
+                azure_static_web_apps_api_token: '<token_removed>'
